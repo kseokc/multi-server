@@ -1,3 +1,8 @@
+# 절대 경로로 프로젝트 루트 지정
+PROJECT_ROOT="/Users/gimseogchan/dev/toy-project/multi" # 여기를 본인 경로에 맞게 수정
+
+cd "$PROJECT_ROOT"
+
 > urls.txt  # 기존 파일 초기화
 
 for i in {1..100}; do
