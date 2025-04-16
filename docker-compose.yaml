@@ -1,0 +1,128 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - app-net
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./grafana-data:/var/lib/grafana"
+      - "./grafana-logs:/var/log/grafana"
+    networks:
+      - app-net
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678
+      MYSQL_DATABASE: mydb
+#      MYSQL_USER: root
+#      MYSQL_PASSWORD: 12345678
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    networks:
+      - app-net
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # prometeus는 mysql과 직접적인 통신이 불가능 하기때문에  mysqla-exporter를 설치해서 직접 metrics를 노출시켜야함
+  mysql-exporter:
+    image: prom/mysqld-exporter
+    container_name: mysql-exporter
+    environment:
+      - DATA_SOURCE_NAME=root:root@(mysql:3306)/
+    ports:
+      - "9104:9104"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-net
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-net
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - spring-app1
+      - spring-app2
+    networks:
+      - app-net
+
+  spring-app1:
+    build:
+      context: ./multistudy
+      dockerfile: Dockerfile
+    container_name: spring-app1
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - REDIS_HOST=redis
+      - SERVER_PORT=8081
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8081"
+    networks:
+      - app-net
+
+  spring-app2:
+    build:
+      context: ./multistudy
+      dockerfile: Dockerfile
+    container_name: spring-app2
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - REDIS_HOST=redis
+      - SERVER_PORT=8082
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8082"
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
+
