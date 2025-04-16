@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# 절대 경로로 프로젝트 루트 지정
+PROJECT_ROOT="/Users/gimseogchan/dev/toy-project/multi" # 여기를 본인 경로에 맞게 수정
+
+cd "$PROJECT_ROOT"
+
 echo "🔧 Stopping spring-app1 and spring-app2..."
 docker compose stop spring-app1 spring-app2
 
