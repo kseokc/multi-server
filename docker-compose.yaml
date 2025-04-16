@@ -9,6 +9,19 @@ services:
     networks:
       - app-net
 
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=admin1234
+      - INFLUXDB_HTTP_AUTH_ENABLED=true
+      - INFLUXDB_DB=k6
+    networks:
+      - app-net
+
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -30,8 +43,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: 12345678
       MYSQL_DATABASE: mydb
-#      MYSQL_USER: root
-#      MYSQL_PASSWORD: 12345678
+    #      MYSQL_USER: root
+    #      MYSQL_PASSWORD: 12345678
     ports:
       - "3307:3306"
     volumes:
